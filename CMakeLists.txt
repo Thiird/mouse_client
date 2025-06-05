@@ -1,24 +1,25 @@
 cmake_minimum_required(VERSION 4.0)
-project(MyCppProject LANGUAGES CXX)
+project(mouse_client CXX)
 
-set(PROJ_VAR mouse_client)
+# Set include directories
+include_directories(${CMAKE_SOURCE_DIR}/include)
 
-# Set C++23 standard
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+# Core source files (OS-agnostic)
+set(CORE_SRC
+    src/main.cc
+)
 
-# Define the executable
-add_executable(${PROJ_VAR} src/main.cc)
-
-# Include directories
-target_include_directories(${PROJ_VAR} PRIVATE ${CMAKE_SOURCE_DIR}/src/include)
-
-# Platform-specific source files
+# OS-specific source files
 if(WIN32)
-    message(STATUS "Configuring for Windows")
+    set(PLATFORM_SRC src/windows/com_port.cc)
 elseif(UNIX AND NOT APPLE)
-    message(STATUS "Configuring for Linux")
+    set(PLATFORM_SRC src/linux/com_port.cc)
 else()
     message(FATAL_ERROR "Unsupported platform")
 endif()
+
+# Combine sources
+set(ALL_SRC ${CORE_SRC} ${PLATFORM_SRC})
+
+# Create executable
+add_executable(${PROJECT_NAME} ${ALL_SRC})

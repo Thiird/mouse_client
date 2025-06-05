@@ -10,7 +10,7 @@ For Windows:
 
 `cmake .. -G "MinGW Makefiles"`
 
-`make`
+`mingw32-make`
 
 For Linux:
 

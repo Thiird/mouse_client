@@ -2,15 +2,17 @@
 #include <vector>
 #include <string>
 
+#include "./include/com_port.hpp"
+
 using namespace std;
 
 int main()
 {
-    vector<string> msg{"Hello", "C++", "World", "from", "VS Code", "and the C++ extension!"};
+    int err = 0;
 
-    for (const string &word : msg)
+    err = init_com_port();
+    if (!err)
     {
-        cout << word << " ";
+        cout << "ERR" << endl;
     }
-    cout << endl;
 }
