@@ -9,6 +9,8 @@ set(CORE_SRC
     src/main.cc
 )
 
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
+
 # OS-specific source files
 if(WIN32)
     set(PLATFORM_SRC src/windows/com_port.cc)
@@ -23,3 +25,6 @@ set(ALL_SRC ${CORE_SRC} ${PLATFORM_SRC})
 
 # Create executable
 add_executable(${PROJECT_NAME} ${ALL_SRC})
+
+# Link Qt
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets)

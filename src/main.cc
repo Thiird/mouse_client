@@ -1,18 +1,30 @@
-#include <iostream>
-#include <vector>
-#include <string>
+#include <QApplication>
+#include <QSystemTrayIcon>
+#include <QMenu>
+#include <QAction>
 
-#include "./include/com_port.hpp"
-
-using namespace std;
-
-int main()
+int main(int argc, char *argv[])
 {
-    int err = 0;
+    QApplication app(argc, argv);
 
-    err = init_com_port();
-    if (!err)
+    if (!QSystemTrayIcon::isSystemTrayAvailable())
     {
-        cout << "ERR" << endl;
+        return 1;
     }
+
+    QSystemTrayIcon trayIcon;
+    trayIcon.setIcon(QIcon::fromTheme("applications-system")); // Use your own icon path here
+    trayIcon.setToolTip("Hello from tray!");
+
+    QMenu menu;
+    QAction quitAction("Quit");
+    QObject::connect(&quitAction, &QAction::triggered, &app, &QApplication::quit);
+    menu.addAction(&quitAction);
+
+    trayIcon.setContextMenu(&menu);
+    trayIcon.show();
+
+    trayIcon.showMessage("Hello", "Hello World from tray!", QSystemTrayIcon::Information, 3000);
+
+    return app.exec();
 }

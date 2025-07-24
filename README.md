@@ -6,16 +6,16 @@ Desktop app to interact with my custom mouse
 
 For Windows:
 
-`cd build`
-
-`cmake .. -G "MinGW Makefiles"`
-
-`mingw32-make`
+```bash
+cd build
+cmake .. -G "MinGW Makefiles" -DCMAKE_PREFIX_PATH="C:/Qt/6.9.1/mingw_64"
+cmake --build .
+```
 
 For Linux:
 
-`cd build`
-
-`cmake ..`
-
-`make`
+```bash
+cd build
+cmake ..
+make
+```

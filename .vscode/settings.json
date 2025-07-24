@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "ostream": "cpp",
+        "qaction": "cpp",
+        "qmenu": "cpp",
+        "qsystemtrayicon": "cpp"
+    }
+}

@@ -6,13 +6,17 @@
                 "${workspaceFolder}/src/include",
                 "${workspaceFolder}/src",
                 "C:/msys64/mingw64/include",
-                "C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/14.2.0/include"
+                "C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/14.2.0/include",
+                "C:/Qt/6.9.1/mingw_64/include",
+                "C:/Qt/6.9.1/mingw_64/include/QtWidgets",
+                "C:/Qt/6.9.1/mingw_64/include/QtCore",
+                "C:/Qt/6.9.1/mingw_64/include/QtGui"
             ],
             "defines": [],
             "compilerPath": "C:/msys64/ucrt64/bin/g++.exe",
             "cStandard": "c17",
             "cppStandard": "c++23",
-            "intelliSenseMode": "gcc-x64"
+            "intelliSenseMode": "windows-gcc-x64"
         }
     ],
     "version": 4
