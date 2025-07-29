@@ -1,21 +1,22 @@
-cmake_minimum_required(VERSION 4.0)
-project(mouse_client CXX)
+cmake_minimum_required(VERSION 3.14)
+project(mouse_client LANGUAGES CXX)
 
-# Set include directories
+# Find Qt
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
+
+# Include directories
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
-# Core source files (OS-agnostic)
+# Always add the core source
 set(CORE_SRC
     src/main.cc
 )
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
-
-# OS-specific source files
+# OS-specific: add all *.cc files from the relevant folder
 if(WIN32)
-    set(PLATFORM_SRC src/windows/com_port.cc)
+    file(GLOB PLATFORM_SRC src/windows/*.cc)
 elseif(UNIX AND NOT APPLE)
-    set(PLATFORM_SRC src/linux/com_port.cc)
+    file(GLOB PLATFORM_SRC src/linux/*.cc)
 else()
     message(FATAL_ERROR "Unsupported platform")
 endif()
