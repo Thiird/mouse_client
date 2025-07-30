@@ -1,49 +1,40 @@
-#include "./include/com_port.hpp"
-#include <iostream>
-#include <thread>
-#include <chrono>
+#include <QApplication>
+#include <QMainWindow>
+#include <QSystemTrayIcon>
+#include <QLabel>
+#include <QPushButton>
+#include "./include/logic.hpp"
+#include "./include/gui.hpp"
 
-int main() {
-    Platform plat = get_current_platform();
-    std::cout << "Running on platform: "
-              << (plat==Platform::WINDOWS ? "Windows" :
-                  plat==Platform::LINUX ? "Linux" : "Unknown") << "\n";
+int main(int argc, char *argv[])
+{
+    QApplication app(argc, argv);
+    QMainWindow mainWindow;
+    QSystemTrayIcon trayIcon;
+    QLabel* dataLabel = nullptr;
+    QPushButton* reloadButton = nullptr;
 
-    while (true) {
-        if (!app_init()) {
-            std::cerr << "Init failed. Retrying...\n";
-            continue;
-        }
+    // Initialize logic
+    logic_loop_init();
 
-        Subject subject = Subject::UNKNOWN;
+    // Initialize GUI
+    gui_init(app, mainWindow, dataLabel, reloadButton, trayIcon);
 
-        // Keep scanning until subject detected
-        while (subject == Subject::UNKNOWN) {
-            if (!app_scan_and_detect(subject)) {
-                std::cerr << "Failed to scan. Reconnecting...\n";
-                break;
-            }
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
+    // Update connection and data
+    auto update_connection = [&]() {
+        MouseData data;
+        bool isConnected = read_mouse_data(data);
+        QString text = isConnected ? format_mouse_data(data) : "";
+        gui_update_data(dataLabel, text, isConnected, &mainWindow, &trayIcon);
+        reloadButton->setEnabled(isConnected);
+    };
 
-        if (subject != Subject::UNKNOWN) {
-            std::cout << "Subject found, starting periodic read every minute...\n";
+    // Connect reload button
+    QObject::connect(reloadButton, &QPushButton::clicked, update_connection);
 
-            while (true) {
-                DataReadFunc func = get_current_read_func();
-                if (func) {
-                    func();
-                } else {
-                    std::cerr << "No handler set. Reconnecting...\n";
-                    break;
-                }
-                std::this_thread::sleep_for(std::chrono::minutes(1));
-            }
-        }
+    // Initial connection check
+    update_connection();
 
-        app_close();
-        std::cout << "Disconnected, will retry...\n";
-    }
-
-    return 0;
+    // Run application loop
+    return app.exec();
 }

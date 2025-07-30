@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
 project(mouse_client LANGUAGES CXX)
 
+set(CMAKE_AUTOMOC ON)  # <-- THIS enables automatic moc generation for Q_OBJECT anywhere, even in .cc
+
 # Find Qt
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
