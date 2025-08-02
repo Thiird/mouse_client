@@ -3,49 +3,56 @@
 #include <functional>
 #include <inttypes.h>
 
-enum class Subject {
-    UNKNOWN,
-    MOUSE,
-    RECEIVER
-};
+#include "../include/com_port.hpp"
+#include <windows.h>
+#include <iostream>
+#include <regex>
+#include <sstream>
+#include <expected>
 
-enum class Platform {
-    UNKNOWN,
-    WINDOWS,
-    LINUX
-};
+namespace ComPort
+{
+    enum class Subject
+    {
+        UNKNOWN,
+        MOUSE,
+        RECEIVER
+    };
 
-struct MouseStatus {
-    std::string firmware_build_date;
-    uint64_t left_clicks = 0;
-    uint64_t right_clicks = 0;
-    uint64_t middle_clicks = 0;
-    uint64_t backward_clicks = 0;
-    uint64_t forward_clicks = 0;
-    uint64_t downward_scrolls = 0;
-    uint64_t upward_scrolls = 0;
-    int battery_mv = 0;
-    int battery_percent = 0;
-    int current_dpi = 0;
-};
+    enum class Platform
+    {
+        UNKNOWN,
+        WINDOWS,
+        LINUX
+    };
 
-// Initialize (try connect, detect subject)
-bool app_init();
+    struct MouseStatus
+    {
+        std::string firmware_build_date;
+        uint64_t left_clicks = 0;
+        uint64_t right_clicks = 0;
+        uint64_t middle_clicks = 0;
+        uint64_t backward_clicks = 0;
+        uint64_t forward_clicks = 0;
+        uint64_t downward_scrolls = 0;
+        uint64_t upward_scrolls = 0;
+        int battery_mv = 0;
+        int battery_percent = 0;
+        int current_dpi = 0;
+    };
 
-// Close resources
-void app_close();
+    static HANDLE hSerial = INVALID_HANDLE_VALUE;
+    static Subject currentSubject = Subject::UNKNOWN;
+    static bool (*read_func)(MouseStatus &status) = nullptr;
 
-// Write ENTER, read line, detect subject if not detected yet
-bool app_scan_and_detect(Subject &subject);
+    bool connect();
 
-// Once subject detected: set function pointer to correct handler
-using DataReadFunc = void(*)();
+    void disconnect();
 
-// Example handlers to set
-void read_data_mouse();
-void read_data_receiver();
+    bool set_device(Subject &subject);
 
-// Get detected platform at startup
-Platform get_current_platform();
+    bool read_mouse_data(MouseStatus &status);
 
-extern DataReadFunc get_current_read_func();
+    void print_status(MouseStatus &status);
+
+}

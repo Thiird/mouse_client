@@ -1,0 +1,6 @@
+<RCC>
+    <qresource>
+        <file>res/icons/mouse.png</file>
+        <file>res/icons/mouse_not.png</file>
+    </qresource>
+</RCC>

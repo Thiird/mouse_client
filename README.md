@@ -1,4 +1,4 @@
-# mouse_client
+# Mouse client
 
 Desktop app to interact with my custom mouse
 
@@ -15,7 +15,21 @@ cmake --build .
 For Linux:
 
 ```bash
+
+```
+
+# Run
+
+For Windows:
+
+```bash
 cd build
-cmake ..
-make
+C:\Qt\<version>\mingw_64\bin\windeployqt.exe .\mouse_client.exe
+.\mouse_client.exe
+```
+
+For Linux:
+
+```bash
+
 ```

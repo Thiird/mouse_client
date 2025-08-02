@@ -1,40 +1,61 @@
-#include <QApplication>
-#include <QMainWindow>
-#include <QSystemTrayIcon>
-#include <QLabel>
-#include <QPushButton>
-#include "./include/logic.hpp"
-#include "./include/gui.hpp"
+#include "include/gui.hpp"
+#include <thread>
+#include <QDebug>
+
+ComPort::MouseStatus status;
+bool connected = false;
+
+void startMonitoring()
+{
+    appendLogMessage("AAA", Qt::green);
+    while (true)
+    {
+        while (!ComPort::connect())
+        {
+            appendLogMessage("Trying to connect to com port..", Qt::red);
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+        }
+
+        appendLogMessage("Connected", Qt::green);
+        connected = true;
+
+
+        while (connected)
+        {
+            
+        Gui::updateGui(status, connected);
+            if (ComPort::read_mouse_data(status))
+            {
+                ComPort::print_status(status);
+
+                appendLogMessage("Read data", Qt::black);
+            }
+            else
+            {
+                appendLogMessage("Could not read mouse data...", Qt::black);
+                break;
+            }
+
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
+
+        Gui::updateGui(status, connected);
+        connected = false;
+
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+    }
+}
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
-    QMainWindow mainWindow;
-    QSystemTrayIcon trayIcon;
-    QLabel* dataLabel = nullptr;
-    QPushButton* reloadButton = nullptr;
-
-    // Initialize logic
-    logic_loop_init();
 
     // Initialize GUI
-    gui_init(app, mainWindow, dataLabel, reloadButton, trayIcon);
+    QApplication &guiApp = gui_init(app);
 
-    // Update connection and data
-    auto update_connection = [&]() {
-        MouseData data;
-        bool isConnected = read_mouse_data(data);
-        QString text = isConnected ? format_mouse_data(data) : "";
-        gui_update_data(dataLabel, text, isConnected, &mainWindow, &trayIcon);
-        reloadButton->setEnabled(isConnected);
-    };
+    std::thread monitoringThread([&]
+                                 { startMonitoring(); });
 
-    // Connect reload button
-    QObject::connect(reloadButton, &QPushButton::clicked, update_connection);
-
-    // Initial connection check
-    update_connection();
-
-    // Run application loop
-    return app.exec();
+    // Run the application loop
+    return guiApp.exec();
 }
