@@ -19,7 +19,6 @@ namespace ComPort
         currentSubject = Subject::UNKNOWN;
         read_func = nullptr;
 
-        std::cout << "Trying to open COM port...\n";
         hSerial = CreateFile(L"\\\\.\\COM3", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
 
         if (hSerial != INVALID_HANDLE_VALUE)
@@ -83,7 +82,7 @@ namespace ComPort
         DWORD bw = 0;
         if (!WriteFile(hSerial, &enter, 1, &bw, NULL))
         {
-            appendLogMessage("Failed to send ENTER", Qt::black);
+            std::cout << "Failed to send ENTER"  << std::endl;
             return false;
         }
 

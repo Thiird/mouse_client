@@ -5,7 +5,8 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
+# Add Multimedia to required Qt6 components
+find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
@@ -29,5 +30,5 @@ qt_add_executable(${PROJECT_NAME}
     resources.qrc
 )
 
-# Link Qt libraries
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets)
+# Link Qt libraries (add Multimedia)
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets Qt6::Multimedia)

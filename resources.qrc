@@ -2,5 +2,8 @@
     <qresource>
         <file>res/icons/mouse.png</file>
         <file>res/icons/mouse_not.png</file>
+        <file>res/mouse_thales.txt</file>
+        <file>res/beep.mp3</file>
+        <file>res/mouse_life.gif</file>
     </qresource>
 </RCC>
