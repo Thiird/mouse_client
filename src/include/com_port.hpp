@@ -42,17 +42,20 @@ namespace ComPort
     };
 
     static HANDLE hSerial = INVALID_HANDLE_VALUE;
-    static Subject currentSubject = Subject::UNKNOWN;
-    static bool (*read_func)(MouseStatus &status) = nullptr;
+    extern Subject connectedTo;
+    extern bool (*read_data_X)(MouseStatus &status);
+    static bool ret = false;
 
-    bool connect();
+    // Static VID/PID for RECEIVER and MOUSE
+    static const std::wstring vidPid = L"VID_2FE3&PID_0003&REV_0303";
+    static const std::wstring receiverDescription = L"Cool mouse receiver";
+    static const std::wstring mouseDescription = L"Cool mouse";
 
+    bool detectDevices(std::wstring& mouseComPort, std::wstring& receiverComPort);
+    bool connect(Subject targetSubject, std::wstring comPortName);
     void disconnect();
-
     bool set_device(Subject &subject);
-
-    bool read_mouse_data(MouseStatus &status);
-
+    bool read_data_mouse(MouseStatus &status);
+    bool read_data_receiver(MouseStatus &status);
     void print_status(MouseStatus &status);
-
 }

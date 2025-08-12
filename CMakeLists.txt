@@ -5,6 +5,8 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
+set(CMAKE_CXX_STANDARD 23)
+
 # Add Multimedia to required Qt6 components
 find_package(Qt6 REQUIRED COMPONENTS Widgets Multimedia)
 
@@ -30,5 +32,9 @@ qt_add_executable(${PROJECT_NAME}
     resources.qrc
 )
 
-# Link Qt libraries (add Multimedia)
-target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets Qt6::Multimedia)
+# Link Qt libraries and SetupAPI for Windows
+if(WIN32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets Qt6::Multimedia setupapi)
+else()
+    target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets Qt6::Multimedia)
+endif()

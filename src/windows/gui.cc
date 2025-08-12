@@ -20,41 +20,41 @@
 #include <QTextBrowser>
 #include <QtMultimedia/QMediaPlayer>
 #include <QtMultimedia/QAudioOutput>
-#include <QMovie> // For GIF support
+#include <QMovie>
+#include <QTimeZone>
 
-#define APP_VERSION "0.1"
-#define WINDOW_SIZE_X 300  // Fixed width
-#define WINDOW_SIZE_Y 300  // Fixed width
+#define APP_VERSION "0.4"
+#define WINDOW_SIZE_X 300
+#define WINDOW_SIZE_Y 300
 #define STATS_FILENAME "mouse_stats.txt"
 #define THALES_FILENAME "mouse_thales.txt"
 #define BEEP_FILENAME "beep.mp3"
 #define GIF_FILENAME "mouse_life.gif"
 
 // Static pointers
-QMainWindow* mainWindow = nullptr;
-QSystemTrayIcon* trayIcon = nullptr;
-QLabel* dataLabel = nullptr;
-QPushButton* reloadButton = nullptr;
-QIcon* connectedIcon = nullptr;
-QIcon* disconnectedIcon = nullptr;
-QMediaPlayer* lowBatteryPlayer = nullptr;
-QLabel* statusLabel = nullptr; // Replaced textbox with label
+QMainWindow *mainWindow = nullptr;
+QSystemTrayIcon *trayIcon = nullptr;
+QLabel *dataLabel = nullptr;
+QPushButton *reloadButton = nullptr;
+QIcon *connectedIcon = nullptr;
+QIcon *disconnectedIcon = nullptr;
+QMediaPlayer *lowBatteryPlayer = nullptr;
+QLabel *statusLabel = nullptr; // Replaced textbox with label
 
 // New: labels for individual stats
-QMap<QString, QLabel*> statLabels;
+QMap<QString, QLabel *> statLabels;
 
 QString lastReadingTime = "Never";
 
 QStringList statNames = {
     "Left clicks", "Right clicks", "Middle clicks",
     "Backward clicks", "Forward clicks",
-    "Down scrolls", "Up scrolls"
-};
+    "Down scrolls", "Up scrolls"};
 
-Gui::Gui(QApplication& app, QObject* parent) : QObject(parent), app(app) {}
+Gui::Gui(QApplication &app, QObject *parent) : QObject(parent), app(app) {}
 Gui::~Gui() {}
 
-QString format_mouse_data(const ComPort::MouseStatus& data)
+QString format_mouse_data(const ComPort::MouseStatus &data)
 {
     return QString(
                "Left clicks: %1\nRight clicks: %2\nMiddle clicks: %3\n"
@@ -70,25 +70,38 @@ QString format_mouse_data(const ComPort::MouseStatus& data)
         .arg(data.battery_percent);
 }
 
-void Gui::updateGui(ComPort::MouseStatus& data, bool connected)
+void Gui::updateGui(ComPort::MouseStatus &data, bool connected)
 {
     if (connected)
     {
-        mainWindow->setWindowTitle("Connected to MOUSE");
+        if (ComPort::connectedTo == ComPort::Subject::MOUSE)
+        {
+            mainWindow->setWindowTitle("Connected to MOUSE");
+            trayIcon->setToolTip("Connected to MOUSE");
+        }
+        else if (ComPort::connectedTo == ComPort::Subject::RECEIVER)
+        {
+            mainWindow->setWindowTitle("Connected to RECEIVER");
+            trayIcon->setToolTip("Connected to RECEIVER");
+        }
+
         mainWindow->setWindowIcon(*connectedIcon);
         trayIcon->setIcon(*connectedIcon);
-        trayIcon->setToolTip("Connected to MOUSE");
         reloadButton->setEnabled(true);
         reloadButton->setToolTip("Click to update the data");
 
         // Update stat labels with black color and larger text
-        statLabels["Left clicks"]->setText(QString("<span style='color:black; font-weight:bold; font-size:14px;'>%1</span>").arg(data.left_clicks));
-        statLabels["Right clicks"]->setText(QString("<span style='color:black; font-weight:bold; font-size:14px;'>%1</span>").arg(data.right_clicks));
-        statLabels["Middle clicks"]->setText(QString("<span style='color:black; font-weight:bold; font-size:14px;'>%1</span>").arg(data.middle_clicks));
-        statLabels["Backward clicks"]->setText(QString("<span style='color:black; font-weight:bold; font-size:14px;'>%1</span>").arg(data.backward_clicks));
-        statLabels["Forward clicks"]->setText(QString("<span style='color:black; font-weight:bold; font-size:14px;'>%1</span>").arg(data.forward_clicks));
-        statLabels["Down scrolls"]->setText(QString("<span style='color:black; font-weight:bold; font-size:14px;'>%1</span>").arg(data.downward_scrolls));
-        statLabels["Up scrolls"]->setText(QString("<span style='color:black; font-weight:bold; font-size:14px;'>%1</span>").arg(data.upward_scrolls));
+        if (ComPort::connectedTo == ComPort::Subject::MOUSE)
+        {
+            statLabels["Left clicks"]->setText(QString("<span style='color:black; font-weight:bold; font-size:14px;'>%1</span>").arg(data.left_clicks));
+            statLabels["Right clicks"]->setText(QString("<span style='color:black; font-weight:bold; font-size:14px;'>%1</span>").arg(data.right_clicks));
+            statLabels["Middle clicks"]->setText(QString("<span style='color:black; font-weight:bold; font-size:14px;'>%1</span>").arg(data.middle_clicks));
+            statLabels["Backward clicks"]->setText(QString("<span style='color:black; font-weight:bold; font-size:14px;'>%1</span>").arg(data.backward_clicks));
+            statLabels["Forward clicks"]->setText(QString("<span style='color:black; font-weight:bold; font-size:14px;'>%1</span>").arg(data.forward_clicks));
+            statLabels["Down scrolls"]->setText(QString("<span style='color:black; font-weight:bold; font-size:14px;'>%1</span>").arg(data.downward_scrolls));
+            statLabels["Up scrolls"]->setText(QString("<span style='color:black; font-weight:bold; font-size:14px;'>%1</span>").arg(data.upward_scrolls));
+        }
+
         statLabels["Battery level"]->setText(QString("<span style='color:black; font-weight:bold; font-size:14px;'>%1%</span>").arg(data.battery_percent));
         statLabels["Last reading"]->setText(QString("<span style='color:black; font-size:14px;'>%1</span>").arg(lastReadingTime));
 
@@ -97,24 +110,29 @@ void Gui::updateGui(ComPort::MouseStatus& data, bool connected)
         statusLabel->setText("<span style='color:green; font-size:12px;'>Connected at " + lastReadingTime + "</span>");
 
         // Append to CSV
-        QFile file(STATS_FILENAME);
-        bool needHeader = (!file.exists() || file.size() == 0);
-        if (file.open(QIODevice::Append | QIODevice::Text))
+        if (ComPort::connectedTo == ComPort::Subject::MOUSE)
         {
-            QTextStream out(&file);
-            if (needHeader)
+            QFile file(STATS_FILENAME);
+            bool needHeader = (!file.exists() || file.size() == 0);
+            if (file.open(QIODevice::Append | QIODevice::Text))
             {
-                out << "timestamp,left_clicks,right_clicks,middle_clicks,backward_clicks,forward_clicks,downward_scrolls,upward_scrolls\n";
+                QTextStream out(&file);
+                if (needHeader)
+                {
+                    out << "timestamp,left_clicks,right_clicks,middle_clicks,backward_clicks,forward_clicks,downward_scrolls,upward_scrolls\n";
+                }
+                out << lastReadingTime << "," << data.left_clicks << "," << data.right_clicks << ","
+                    << data.middle_clicks << "," << data.backward_clicks << "," << data.forward_clicks << ","
+                    << data.downward_scrolls << "," << data.upward_scrolls << "\n";
             }
-            out << lastReadingTime << "," << data.left_clicks << "," << data.right_clicks << ","
-                << data.middle_clicks << "," << data.backward_clicks << "," << data.forward_clicks << ","
-                << data.downward_scrolls << "," << data.upward_scrolls << "\n";
         }
 
         if (data.battery_percent < 30 && lowBatteryPlayer)
         {
             lowBatteryPlayer->play();
         }
+
+        // lowBatteryPlayer->play();
     }
     else
     {
@@ -126,7 +144,7 @@ void Gui::updateGui(ComPort::MouseStatus& data, bool connected)
         reloadButton->setToolTip("No device connected");
 
         // Keep last values, but gray
-        for (const QString& name : statLabels.keys())
+        for (const QString &name : statLabels.keys())
         {
             QString currentText = statLabels[name]->text();
             QString value = currentText.section('>', 1).section('<', 0, 0);
@@ -136,18 +154,19 @@ void Gui::updateGui(ComPort::MouseStatus& data, bool connected)
     }
 }
 
-void MainWindow::closeEvent(QCloseEvent* event)
+void MainWindow::closeEvent(QCloseEvent *event)
 {
     this->hide();
     event->ignore();
 }
 
-void gui_init(QApplication& app, QAction** quitActionOut)
+void gui_init(QApplication &app, QAction **quitActionOut)
 {
     // Load icons with QString() to ensure proper resource path
     connectedIcon = new QIcon(QString(":/res/icons/mouse.png"));
     disconnectedIcon = new QIcon(QString(":/res/icons/mouse_not.png"));
-    if (connectedIcon->isNull() || disconnectedIcon->isNull()) {
+    if (connectedIcon->isNull() || disconnectedIcon->isNull())
+    {
         qDebug() << "Warning: One or both icons failed to load.";
     }
     app.setWindowIcon(*disconnectedIcon);
@@ -159,7 +178,7 @@ void gui_init(QApplication& app, QAction** quitActionOut)
         {
             QTextStream out(&checkFile);
             out << "Date";
-            for (const auto& name : statNames)
+            for (const auto &name : statNames)
                 out << "," << name;
             out << "\n";
         }
@@ -168,39 +187,39 @@ void gui_init(QApplication& app, QAction** quitActionOut)
     mainWindow = new MainWindow();
     mainWindow->setWindowTitle("Not connected");
     mainWindow->setWindowIcon(*disconnectedIcon);
-    mainWindow->setFixedWidth(WINDOW_SIZE_X);         // Fixed width
-    mainWindow->setFixedHeight(WINDOW_SIZE_Y);         // Fixed width
+    mainWindow->setFixedWidth(WINDOW_SIZE_X);  // Fixed width
+    mainWindow->setFixedHeight(WINDOW_SIZE_Y); // Fixed width
 
     // Menus (removed File menu)
-    QMenu* aboutMenu = new QMenu("About");
-    QAction* aboutAction = new QAction("About");
-    QAction* thalesAction = new QAction("Thales");
+    QMenu *aboutMenu = new QMenu("About");
+    QAction *aboutAction = new QAction("About");
+    QAction *thalesAction = new QAction("Thales");
     aboutMenu->addAction(aboutAction);
     aboutMenu->addAction(thalesAction);
 
-    QMenuBar* menuBar = new QMenuBar();
+    QMenuBar *menuBar = new QMenuBar();
     menuBar->addMenu(aboutMenu);
     mainWindow->setMenuBar(menuBar);
 
     // Main layout using QGridLayout
-    QGridLayout* mainLayout = new QGridLayout();
-    mainLayout->setSpacing(2); // Minimal spacing
+    QGridLayout *mainLayout = new QGridLayout();
+    mainLayout->setSpacing(2);                  // Minimal spacing
     mainLayout->setContentsMargins(2, 2, 2, 2); // Minimal margins
     mainLayout->setAlignment(Qt::AlignTop);     // Align the entire layout to the top
 
     // Grid layout for stats
-    QGridLayout* grid = new QGridLayout();
+    QGridLayout *grid = new QGridLayout();
     grid->setSpacing(2); // Increased spacing to prevent overlap
     grid->setContentsMargins(0, 0, 0, 0);
-    grid->setAlignment(Qt::AlignTop);           // Align grid contents to the top
+    grid->setAlignment(Qt::AlignTop); // Align grid contents to the top
 
-    QString nameStyle = "padding: 1px; font-size: 12px;"; // Increased from 10px to 12px
+    QString nameStyle = "padding: 1px; font-size: 12px;";                     // Increased from 10px to 12px
     QString valueStyle = "padding: 1px; font-weight: bold; font-size: 14px;"; // Increased from 12px to 14px
 
     for (int i = 0; i < statNames.size(); ++i)
     {
-        QLabel* nameLabel = new QLabel(statNames[i] + ":");
-        QLabel* valueLabel = new QLabel("<span style='color:gray; font-size:14px;'>0</span>");
+        QLabel *nameLabel = new QLabel(statNames[i] + ":");
+        QLabel *valueLabel = new QLabel("<span style='color:gray; font-size:14px;'>0</span>");
         valueLabel->setTextFormat(Qt::RichText);
 
         nameLabel->setStyleSheet(nameStyle);
@@ -211,8 +230,8 @@ void gui_init(QApplication& app, QAction** quitActionOut)
         grid->addWidget(valueLabel, i, 1, Qt::AlignLeft | Qt::AlignTop); // Align to top
     }
 
-    QLabel* batteryLabel = new QLabel("Battery level:");
-    QLabel* batteryValueLabel = new QLabel("<span style='color:gray; font-size:14px;'>0%</span>");
+    QLabel *batteryLabel = new QLabel("Battery level:");
+    QLabel *batteryValueLabel = new QLabel("<span style='color:gray; font-size:14px;'>0%</span>");
     batteryValueLabel->setTextFormat(Qt::RichText);
     batteryValueLabel->setStyleSheet(valueStyle);
     batteryLabel->setStyleSheet(nameStyle);
@@ -220,8 +239,8 @@ void gui_init(QApplication& app, QAction** quitActionOut)
     grid->addWidget(batteryLabel, statNames.size(), 0, Qt::AlignRight | Qt::AlignTop);
     grid->addWidget(batteryValueLabel, statNames.size(), 1, Qt::AlignLeft | Qt::AlignTop);
 
-    QLabel* lastReadingLabel = new QLabel("Last reading:");
-    QLabel* lastReadingValueLabel = new QLabel("<span style='color:gray; font-size:14px;'>Never</span>");
+    QLabel *lastReadingLabel = new QLabel("Last reading:");
+    QLabel *lastReadingValueLabel = new QLabel("<span style='color:gray; font-size:14px;'>Never</span>");
     lastReadingValueLabel->setTextFormat(Qt::RichText);
     lastReadingValueLabel->setStyleSheet(valueStyle);
     lastReadingLabel->setStyleSheet(nameStyle);
@@ -230,10 +249,10 @@ void gui_init(QApplication& app, QAction** quitActionOut)
     grid->addWidget(lastReadingValueLabel, statNames.size() + 1, 1, Qt::AlignLeft | Qt::AlignTop);
 
     // Frame around grid
-    QFrame* gridFrame = new QFrame();
-    QVBoxLayout* frameLayout = new QVBoxLayout(gridFrame);
+    QFrame *gridFrame = new QFrame();
+    QVBoxLayout *frameLayout = new QVBoxLayout(gridFrame);
     frameLayout->setContentsMargins(0, 0, 0, 0);
-    frameLayout->setAlignment(Qt::AlignTop);     // Align frame contents to the top
+    frameLayout->setAlignment(Qt::AlignTop); // Align frame contents to the top
     frameLayout->addLayout(grid);
     mainLayout->addWidget(gridFrame, 0, 0, 1, 2, Qt::AlignTop); // Span two columns, align to top
 
@@ -241,7 +260,7 @@ void gui_init(QApplication& app, QAction** quitActionOut)
     dataLabel = new QLabel();
     dataLabel->setTextFormat(Qt::RichText);
     dataLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
-    dataLabel->setMaximumHeight(40); // Limit height
+    dataLabel->setMaximumHeight(40);                            // Limit height
     mainLayout->addWidget(dataLabel, 1, 0, 1, 2, Qt::AlignTop); // Span two columns, align to top
 
     // Reload button (full width)
@@ -249,18 +268,18 @@ void gui_init(QApplication& app, QAction** quitActionOut)
     reloadButton->setIcon(QIcon::fromTheme("view-refresh"));
     reloadButton->setToolTip("No device connected");
     reloadButton->setEnabled(false);
-    mainLayout->addWidget(reloadButton, 2, 0, 1, 2, Qt::AlignTop); // Span two columns, align to top
+    mainLayout->addWidget(reloadButton, 2, 0, 1, 2, Qt::AlignTop);           // Span two columns, align to top
     reloadButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed); // Expand horizontally
 
     // Status label (replaced textbox)
     statusLabel = new QLabel("<span style='color:gray; font-size:12px;'>Not connected</span>");
     statusLabel->setTextFormat(Qt::RichText);
     statusLabel->setAlignment(Qt::AlignCenter | Qt::AlignTop);
-    statusLabel->setStyleSheet("font-size: 12px;"); // Increased from 10px to 12px
+    statusLabel->setStyleSheet("font-size: 12px;");               // Increased from 10px to 12px
     mainLayout->addWidget(statusLabel, 3, 0, 1, 2, Qt::AlignTop); // Span two columns, align to top
 
     // Set layout
-    QWidget* centralWidget = new QWidget();
+    QWidget *centralWidget = new QWidget();
     centralWidget->setLayout(mainLayout);
     mainWindow->setCentralWidget(centralWidget);
 
@@ -268,9 +287,9 @@ void gui_init(QApplication& app, QAction** quitActionOut)
     trayIcon->setIcon(*disconnectedIcon); // Ensure icon is set before making visible
     trayIcon->setToolTip("Not connected");
 
-    QMenu* trayMenu = new QMenu(mainWindow);
-    QAction* openAction = new QAction("Open");
-    QAction* quitAction = new QAction("Quit");
+    QMenu *trayMenu = new QMenu(mainWindow);
+    QAction *openAction = new QAction("Open");
+    QAction *quitAction = new QAction("Quit");
     trayMenu->addAction(openAction);
     trayMenu->addAction(quitAction);
     trayIcon->setContextMenu(trayMenu);
@@ -281,25 +300,55 @@ void gui_init(QApplication& app, QAction** quitActionOut)
 
     QObject::connect(aboutAction, &QAction::triggered, []()
                      {
-        QMovie* movie = new QMovie(QString(":/res/") + GIF_FILENAME);
-        if (movie->isValid())
-        {
-            QLabel* gifLabel = new QLabel();
-            gifLabel->setMovie(movie);
-            movie->start();
+                         QMovie *movie = new QMovie(QString(":/res/") + GIF_FILENAME);
+                         if (!movie->isValid())
+                         {
+                             QMessageBox::warning(mainWindow, "Error", QString("Failed to load GIF: ") + GIF_FILENAME);
+                             return;
+                         }
 
-            QDialog dialog(mainWindow);
-            QVBoxLayout* vbox = new QVBoxLayout(&dialog);
-            vbox->addWidget(gifLabel);
-            dialog.setWindowTitle("About");
-            dialog.resize(400, 300); // Adjusted size for GIF
-            dialog.exec();
-        }
-        else
-        {
-            QMessageBox::warning(mainWindow, "Error", QString("Failed to load GIF: ") + GIF_FILENAME);
-        }
-                     });
+                         QLabel *gifLabel = new QLabel();
+                         gifLabel->setMovie(movie);
+
+                         // Resize the QLabel to fixed 50x50
+                         gifLabel->setFixedSize(50, 50);
+
+                         // Scale the movie frames to fit the label
+                         movie->setScaledSize(gifLabel->size());
+
+                         movie->start();
+
+                         // Version and compile info
+                         QString buildInfo = QString("Version: %1\nCompiled on: %2 %3 %4")
+                                                 .arg(APP_VERSION)
+                                                 .arg(__DATE__)
+                                                 .arg(__TIME__)
+                                                 .arg(QTimeZone::systemTimeZone().displayName(QDateTime::currentDateTime(), QTimeZone::ShortName));
+
+                         QLabel *infoLabel = new QLabel(buildInfo);
+                         infoLabel->setAlignment(Qt::AlignVCenter);
+                         infoLabel->setStyleSheet("font-size: 12px; padding: 4px;");
+
+                         QDialog dialog(mainWindow);
+                         dialog.setWindowTitle("About");
+                         
+
+                         // Create a horizontal layout
+                         QHBoxLayout *hbox = new QHBoxLayout();
+
+                         // Add the GIF on the left
+                         hbox->addWidget(gifLabel, 0, Qt::AlignLeft | Qt::AlignVCenter);
+
+                         // Add some spacing if you want
+                         hbox->addSpacing(10);
+
+                         // Add the text label to the right, aligned vertically center
+                         hbox->addWidget(infoLabel, 1, Qt::AlignVCenter);
+
+                         // Set the layout on the dialog
+                         dialog.setLayout(hbox);
+
+                         dialog.exec(); });
 
     QObject::connect(thalesAction, &QAction::triggered, []()
                      {
@@ -351,7 +400,7 @@ void gui_init(QApplication& app, QAction** quitActionOut)
     }
 
     lowBatteryPlayer = new QMediaPlayer(mainWindow);
-    QAudioOutput* audioOutput = new QAudioOutput(mainWindow);
+    QAudioOutput *audioOutput = new QAudioOutput(mainWindow);
     audioOutput->setVolume(1.0);
     lowBatteryPlayer->setAudioOutput(audioOutput);
     lowBatteryPlayer->setSource(QUrl(QString(":/res/") + BEEP_FILENAME));

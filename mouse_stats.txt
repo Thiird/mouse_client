@@ -1,0 +1,3 @@
+Date,Left clicks,Right clicks,Middle clicks,Backward clicks,Forward clicks,Down scrolls,Up scrolls
+2025-08-12 22:56:07,0,0,0,0,0,0,0
+2025-08-12 23:12:15,0,0,0,0,0,0,0
