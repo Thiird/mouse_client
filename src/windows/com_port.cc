@@ -1,15 +1,17 @@
-#include "../include/com_port.hpp"
 #include <windows.h>
 #include <setupapi.h>
 #include <iostream>
 #include <regex>
 #include <sstream>
 #include <inttypes.h>
-#include <QApplication>
-#include "../include/gui.hpp"
 #include <expected>
 #include <initguid.h>
 #include <devpkey.h>
+
+#include <QApplication>
+
+#include "../include/com_port.hpp"
+#include "../include/gui.hpp"
 
 #pragma comment(lib, "setupapi.lib")
 
@@ -79,8 +81,6 @@ bool detectDevices(std::wstring &mouseComPort, std::wstring &receiverComPort)
         }
     }
     SetupDiDestroyDeviceInfoList(deviceInfoSet);
-
-    std::cout << "------------------" << std::endl;
 
     return !mouseComPort.empty() || !receiverComPort.empty();
 }

@@ -1,14 +1,14 @@
 #pragma once
-#include <string>
+#include <expected>
 #include <functional>
 #include <inttypes.h>
-
-#include "../include/com_port.hpp"
-#include <windows.h>
 #include <iostream>
 #include <regex>
 #include <sstream>
-#include <expected>
+#include <string>
+#include <windows.h>
+
+#include "../include/com_port.hpp"
 
 namespace ComPort
 {

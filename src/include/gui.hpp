@@ -11,6 +11,7 @@ public:
     Gui(QApplication &app, QObject *parent = nullptr);
     ~Gui();
     static void updateGui(ComPort::MouseStatus &data, bool connected);
+    static bool guiOpen;
 
 private:
     QApplication &app;

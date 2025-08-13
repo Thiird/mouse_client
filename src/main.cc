@@ -1,10 +1,10 @@
-#include "include/gui.hpp"
-#include "include/com_port.hpp"
-#include <thread>
-#include <QDebug>
 #include <atomic>
 #include <chrono>
 #include <iostream>
+#include <thread>
+
+#include "include/gui.hpp"
+#include "include/com_port.hpp"
 
 std::atomic<bool> stopRequested(false);
 ComPort::MouseStatus status;
@@ -69,6 +69,8 @@ void startMonitoring()
     {
         std::this_thread::sleep_for(std::chrono::seconds(wait_time));
 
+        wait_time = 60;
+
         if (stopRequested)
             break;
 
@@ -98,7 +100,8 @@ void startMonitoring()
         }
 
         wait_time = 3;
-        Gui::updateGui(status, true);
+
+        Gui::updateGui(status, true);       
     }
 }
 
