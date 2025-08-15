@@ -1,66 +1,14 @@
-LMAOO
-d
-d
-d
-d
-d
-
-d
-d
-
-d
-d
-d
-d
-d
-d
-d
-d
-d
-d
-d
-d
-d
-d
-d
-
-d
-filef
-filef
-file
-
-w
-w
-w
-
-rw
-g
-mouse_thaleste
-
-g
-eg
-
-teg
-teghy
-rnmyr
-mouser
-mouseyh
-
-qresourcedq
-
-dw
-qresourceeq
-ceq
-ceqeq
-
-ceq
-dc
-dcc
-w
-4
-res2
-4
-5
-j
-5j
-75
+These infos were reset on 17 April 2025 at approximately 21:30.
+While attempting to start the debugger to fix a refactor issue, the EEPROM was accidentally erased.
+The logging originally started approximately in April of 2024.
+Fucking hell, I just realized I have been using this mouse I built for a whole year (stll working on it).
+The last 12 months have been eventful, to say the least:
+- graduated university
+- moved to another city
+- started my first full time job
+- started investing
+- re-started working out (calisthenics with a little running)
+Having lost this data makes me feel like I lost a little bit of what happened.
+I cannot help it but to sprinkle these kind of 'memory bookmarks' everywhere I go.
+Every lost memory feels like a tragic event to me, that's how attached to life I am.
+Now that all of these things have been said, I feel much better about the lost data.

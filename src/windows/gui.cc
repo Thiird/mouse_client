@@ -27,10 +27,10 @@
 
 #include "../include/gui.hpp"
 
-#define APP_VERSION "0.5"
+#define APP_VERSION "0.7"
 
 #define WINDOW_SIZE_X 300
-#define WINDOW_SIZE_Y 300
+#define WINDOW_SIZE_Y 280
 
 #define STATS_FILENAME "mouse_stats.txt"
 #define THALES_FILENAME "mouse_thales.txt"
@@ -50,7 +50,7 @@ QAudioOutput *lowBatteryAudio = nullptr;
 // New: labels for individual stats
 QMap<QString, QLabel *> statLabels;
 
-QString lastReadingTime = "Never";
+QString Gui::lastReadingTime = "Never";
 
 QStringList statNames = {
     "Left clicks", "Right clicks", "Middle clicks",
@@ -111,7 +111,7 @@ void Gui::updateGui(ComPort::MouseStatus &data, bool connected)
         }
 
         statLabels["Battery level"]->setText(QString("<span style='color:black; font-weight:bold; font-size:14px;'>%1%</span>").arg(data.battery_percent));
-        statLabels["Last reading"]->setText(QString("<span style='color:black; font-size:14px;'>%1</span>").arg(lastReadingTime));
+        statLabels["Last reading"]->setText(QString("<span style='color:black; font-size:14px;'>%1</span>").arg(Gui::lastReadingTime));
 
         // Append to CSV
         if (ComPort::connectedTo == ComPort::Subject::MOUSE)
@@ -125,7 +125,7 @@ void Gui::updateGui(ComPort::MouseStatus &data, bool connected)
                 {
                     out << "timestamp,left_clicks,right_clicks,middle_clicks,backward_clicks,forward_clicks,downward_scrolls,upward_scrolls\n";
                 }
-                out << lastReadingTime << "," << data.left_clicks << "," << data.right_clicks << ","
+                out << Gui::lastReadingTime << "," << data.left_clicks << "," << data.right_clicks << ","
                     << data.middle_clicks << "," << data.backward_clicks << "," << data.forward_clicks << ","
                     << data.downward_scrolls << "," << data.upward_scrolls << "\n";
             }
@@ -159,7 +159,7 @@ void Gui::updateGui(ComPort::MouseStatus &data, bool connected)
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     this->hide();
-    event->ignore();    
+    event->ignore();
     Gui::guiOpen = false;
 }
 
@@ -264,11 +264,22 @@ void gui_init(QApplication &app, QAction **quitActionOut)
     mainLayout->addWidget(dataLabel, 1, 0, 1, 2, Qt::AlignTop);
 
     reloadButton = new QPushButton();
-    reloadButton->setIcon(QIcon::fromTheme("view-refresh"));
+    reloadButton->setText("Update now");
     reloadButton->setToolTip("No device connected");
     reloadButton->setEnabled(false);
-    mainLayout->addWidget(reloadButton, 2, 0, 1, 2, Qt::AlignTop);
-    reloadButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    reloadButton->setFixedSize(100, 30);
+    mainLayout->addWidget(reloadButton, 2, 0, 1, 2, Qt::AlignHCenter | Qt::AlignVCenter);
+
+    // Connect reloadButton's clicked signal to trigger ComPort::read_data_X
+    QObject::connect(reloadButton, &QPushButton::clicked, []()
+                     {
+        ComPort::MouseStatus status;
+        bool success = ComPort::read_data_X(status);
+        if (success)
+        {
+            Gui::lastReadingTime = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
+        }
+        Gui::updateGui(status, success); });
 
     QWidget *centralWidget = new QWidget();
     centralWidget->setLayout(mainLayout);
@@ -290,43 +301,44 @@ void gui_init(QApplication &app, QAction **quitActionOut)
         *quitActionOut = quitAction;
 
     QObject::connect(aboutAction, &QAction::triggered, []()
-    {
-        QMovie *movie = new QMovie(QString(":/res/") + GIF_FILENAME);
-        if (!movie->isValid()) {
-            QMessageBox::warning(mainWindow, "Error", QString("Failed to load GIF: ") + GIF_FILENAME);
-            return;
-        }
-        QLabel *gifLabel = new QLabel();
-        movie->jumpToFrame(0);
-        QSize gifSize = movie->currentImage().size();
-        gifLabel->setFixedSize(gifSize);
-        gifLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-        gifLabel->setMovie(movie);
-        movie->start();
+                     {
+    QMovie *movie = new QMovie(QString(":/res/") + GIF_FILENAME);
+    if (!movie->isValid()) {
+        QMessageBox::warning(mainWindow, "Error", QString("Failed to load GIF: ") + GIF_FILENAME);
+        return;
+    }
+    QLabel *gifLabel = new QLabel();
+    movie->jumpToFrame(0);
+    QSize gifSize = movie->currentImage().size();
+    gifLabel->setFixedSize(gifSize);
+    gifLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    gifLabel->setMovie(movie);
+    movie->start();
 
-        QString buildInfo = QString("Version: %1\nCompiled on: %2 %3 %4")
-                                .arg(APP_VERSION)
-                                .arg(__DATE__)
-                                .arg(__TIME__)
-                                .arg(QTimeZone::systemTimeZone().displayName(QDateTime::currentDateTime(), QTimeZone::ShortName));
+    QString buildInfo = QString("<b>Mouse Client</b><br>Display and backup mouse stats<br><br>Version: %1<br>Compiled on: %2 %3 %4")
+                            .arg(APP_VERSION)
+                            .arg(__DATE__)
+                            .arg(__TIME__)
+                            .arg(QTimeZone::systemTimeZone().displayName(QDateTime::currentDateTime(), QTimeZone::ShortName));
 
-        QLabel *infoLabel = new QLabel(buildInfo);
-        infoLabel->setAlignment(Qt::AlignVCenter);
-        infoLabel->setStyleSheet("font-size: 12px; padding: 4px;");
+    QLabel *infoLabel = new QLabel(buildInfo);
+    infoLabel->setAlignment(Qt::AlignCenter); // Center-align all text
+    infoLabel->setTextFormat(Qt::RichText); // Enable HTML formatting for bold text
+    infoLabel->setStyleSheet("font-size: 12px; padding: 4px;");
 
-        QDialog dialog(mainWindow);
-        dialog.setWindowTitle("About");
+    QDialog dialog(mainWindow);
+    dialog.setWindowTitle("About");
+    dialog.setFixedSize(400, 150); // Set fixed size for non-expandable dialog
 
-        QHBoxLayout *hbox = new QHBoxLayout();
-        hbox->addWidget(gifLabel, 0, Qt::AlignLeft | Qt::AlignVCenter);
-        hbox->addSpacing(10);
-        hbox->addWidget(infoLabel, 1, Qt::AlignVCenter);
-        dialog.setLayout(hbox);
-        dialog.exec();
-    });
+    QHBoxLayout *hbox = new QHBoxLayout();
+    hbox->addWidget(gifLabel, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    hbox->addSpacing(10);
+    hbox->addWidget(infoLabel, 1, Qt::AlignCenter);
+    dialog.setLayout(hbox);
+    dialog.exec(); });
 
     QObject::connect(thalesAction, &QAction::triggered, []()
-    {
+                     {
         QFile file(QString(":/res/") + THALES_FILENAME);
         QString text = "Could not load text.";
         if (file.open(QIODevice::ReadOnly | QIODevice::Text))
@@ -345,16 +357,14 @@ void gui_init(QApplication &app, QAction **quitActionOut)
         vbox->addWidget(browser);
         dialog.setWindowTitle("Mouse Thales");
         dialog.resize(400, 300);
-        dialog.exec();
-    });
+        dialog.exec(); });
 
     QObject::connect(openAction, &QAction::triggered, []()
-    {
+                     {
         mainWindow->show();
         mainWindow->raise();
         mainWindow->activateWindow();
-        Gui::guiOpen = true;
-    });
+        Gui::guiOpen = true; });
 
     QFile stats(STATS_FILENAME);
     if (stats.open(QIODevice::ReadOnly | QIODevice::Text))
@@ -366,8 +376,8 @@ void gui_init(QApplication &app, QAction **quitActionOut)
         auto fields = lastLine.split(",");
         if (fields.size() >= statNames.size() + 1)
         {
-            lastReadingTime = fields[0];
-            statLabels["Last reading"]->setText(QString("<span style='color:gray; font-size:14px;'>%1</span>").arg(lastReadingTime));
+            Gui::lastReadingTime = fields[0];
+            statLabels["Last reading"]->setText(QString("<span style='color:gray; font-size:14px;'>%1</span>").arg(Gui::lastReadingTime));
             for (int i = 0; i < statNames.size(); ++i)
             {
                 statLabels[statNames[i]]->setText(

@@ -79,6 +79,8 @@
     "variant": "cpp",
     "qapplication": "cpp",
     "qdialog": "cpp",
-    "qmovie": "cpp"
+    "qmovie": "cpp",
+    "qhboxlayout": "cpp",
+    "qimagereader": "cpp"
   }
 }

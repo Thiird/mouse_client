@@ -12,6 +12,7 @@ public:
     ~Gui();
     static void updateGui(ComPort::MouseStatus &data, bool connected);
     static bool guiOpen;
+    static QString lastReadingTime;
 
 private:
     QApplication &app;

@@ -10,6 +10,8 @@
 
 #include <QApplication>
 
+#include <QDateTime>
+
 #include "../include/com_port.hpp"
 #include "../include/gui.hpp"
 
@@ -187,6 +189,8 @@ bool detectDevices(std::wstring &mouseComPort, std::wstring &receiverComPort)
             status.battery_percent = std::stoi(m[2]);
         }
 
+        Gui::lastReadingTime = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
+
         return true;
     }
 
@@ -273,6 +277,7 @@ bool detectDevices(std::wstring &mouseComPort, std::wstring &receiverComPort)
             status.current_dpi = std::stoi(m[1]);
         }
 
+        Gui::lastReadingTime = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
         return true;
     }
 
