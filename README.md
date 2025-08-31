@@ -10,6 +10,8 @@ For Windows:
 cd build
 cmake .. -G "MinGW Makefiles" -DCMAKE_PREFIX_PATH="C:/Qt/6.9.1/mingw_64"
 cmake --build .
+cmake --build . --target clean
+
 ```
 
 For Linux:

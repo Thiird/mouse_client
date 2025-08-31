@@ -27,7 +27,7 @@
 
 #include "../include/gui.hpp"
 
-#define APP_VERSION "0.7"
+#define APP_VERSION "0.8"
 
 #define WINDOW_SIZE_X 300
 #define WINDOW_SIZE_Y 280
