@@ -78,7 +78,7 @@ void startMonitoring()
     while (!stopRequested)
     {
         std::this_thread::sleep_for(std::chrono::seconds(wait_time));
-        wait_time = 60;
+        wait_time = 2;
 
         if (stopRequested)
             break;
@@ -88,7 +88,7 @@ void startMonitoring()
         if (!selectDevice())
         {
             std::cout << "Trying to connect to COM port..." << std::endl;
-            wait_time = 10;
+            wait_time = 2;
             Gui::updateGui(status, false);
             continue;
         }
@@ -103,7 +103,7 @@ void startMonitoring()
         {
             std::cout << "Could not read data, disconnecting" << std::endl;
             ComPort::disconnect();
-            wait_time = 10;
+            wait_time = 2;
             Gui::updateGui(status, false);
             continue;
         }
@@ -135,14 +135,3 @@ int main(int argc, char *argv[])
     return app.exec();
 }
 
-#ifdef _WIN32
-#include <windows.h>
-
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
-{
-    // Convert lpCmdLine to argc/argv
-    int argc = 0;
-    char* argv[] = { nullptr };
-    return main(argc, argv);
-}
-#endif

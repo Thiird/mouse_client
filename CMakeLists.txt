@@ -32,7 +32,6 @@ endif()
 
 # -------------------- Qt Executable --------------------
 qt_add_executable(${PROJECT_NAME}
-    WIN32
     ${CORE_SRC}
     ${PLATFORM_SRC}
     resources.qrc

@@ -29,6 +29,3 @@ protected:
 };
 
 void gui_init(QApplication &app, QAction **quitActionOut);
-
-QString format_mouse_data(const ComPort::MouseStatus &data);
-

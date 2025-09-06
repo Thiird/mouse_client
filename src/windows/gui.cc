@@ -55,28 +55,14 @@ QString Gui::lastReadingTime = "Never";
 QStringList statNames = {
     "Left clicks", "Right clicks", "Middle clicks",
     "Backward clicks", "Forward clicks",
-    "Down scrolls", "Up scrolls"};
+    "Down scrolls", "Up scrolls",
+    "Current DPI"
+};
 
 Gui::Gui(QApplication &app, QObject *parent) : QObject(parent), app(app) {}
 Gui::~Gui() {}
 
 bool Gui::guiOpen = false;
-
-QString format_mouse_data(const ComPort::MouseStatus &data)
-{
-    return QString(
-               "Left clicks: %1\nRight clicks: %2\nMiddle clicks: %3\n"
-               "Backward clicks: %4\nForward clicks: %5\n"
-               "Down scrolls: %6\nUp scrolls: %7\nBattery level: %8%%")
-        .arg(data.left_clicks)
-        .arg(data.right_clicks)
-        .arg(data.middle_clicks)
-        .arg(data.backward_clicks)
-        .arg(data.forward_clicks)
-        .arg(data.downward_scrolls)
-        .arg(data.upward_scrolls)
-        .arg(data.battery_percent);
-}
 
 void Gui::updateGui(ComPort::MouseStatus &data, bool connected)
 {
@@ -108,12 +94,13 @@ void Gui::updateGui(ComPort::MouseStatus &data, bool connected)
             statLabels["Forward clicks"]->setText(QString("<span style='color:black; font-weight:bold; font-size:14px;'>%1</span>").arg(data.forward_clicks));
             statLabels["Down scrolls"]->setText(QString("<span style='color:black; font-weight:bold; font-size:14px;'>%1</span>").arg(data.downward_scrolls));
             statLabels["Up scrolls"]->setText(QString("<span style='color:black; font-weight:bold; font-size:14px;'>%1</span>").arg(data.upward_scrolls));
+            statLabels["Current DPI"]->setText(QString("<span style='color:black; font-weight:bold; font-size:14px;'>%1</span>").arg(data.current_dpi));
         }
 
         statLabels["Battery level"]->setText(QString("<span style='color:black; font-weight:bold; font-size:14px;'>%1%</span>").arg(data.battery_percent));
         statLabels["Last reading"]->setText(QString("<span style='color:black; font-size:14px;'>%1</span>").arg(Gui::lastReadingTime));
 
-        // Append to CSV
+        // Append to CSV (do NOT include DPI)
         if (ComPort::connectedTo == ComPort::Subject::MOUSE)
         {
             QFile file(STATS_FILENAME);
@@ -184,7 +171,8 @@ void gui_init(QApplication &app, QAction **quitActionOut)
             QTextStream out(&checkFile);
             out << "Date";
             for (const auto &name : statNames)
-                out << "," << name;
+                if (name != "Current DPI") // 👈 skip DPI in CSV
+                    out << "," << name;
             out << "\n";
         }
     }
@@ -270,7 +258,7 @@ void gui_init(QApplication &app, QAction **quitActionOut)
     reloadButton->setFixedSize(100, 30);
     mainLayout->addWidget(reloadButton, 2, 0, 1, 2, Qt::AlignHCenter | Qt::AlignVCenter);
 
-    // Connect reloadButton's clicked signal to trigger ComPort::read_data_X
+    // Connect reloadButton's clicked signal
     QObject::connect(reloadButton, &QPushButton::clicked, []()
                      {
         ComPort::MouseStatus status;
@@ -322,13 +310,13 @@ void gui_init(QApplication &app, QAction **quitActionOut)
                             .arg(QTimeZone::systemTimeZone().displayName(QDateTime::currentDateTime(), QTimeZone::ShortName));
 
     QLabel *infoLabel = new QLabel(buildInfo);
-    infoLabel->setAlignment(Qt::AlignCenter); // Center-align all text
-    infoLabel->setTextFormat(Qt::RichText); // Enable HTML formatting for bold text
+    infoLabel->setAlignment(Qt::AlignCenter);
+    infoLabel->setTextFormat(Qt::RichText);
     infoLabel->setStyleSheet("font-size: 12px; padding: 4px;");
 
     QDialog dialog(mainWindow);
     dialog.setWindowTitle("About");
-    dialog.setFixedSize(400, 150); // Set fixed size for non-expandable dialog
+    dialog.setFixedSize(400, 150);
 
     QHBoxLayout *hbox = new QHBoxLayout();
     hbox->addWidget(gifLabel, 0, Qt::AlignLeft | Qt::AlignVCenter);
@@ -374,12 +362,13 @@ void gui_init(QApplication &app, QAction **quitActionOut)
         while (!in.atEnd())
             lastLine = in.readLine();
         auto fields = lastLine.split(",");
-        if (fields.size() >= statNames.size() + 1)
+        if (fields.size() >= statNames.size()) // DPI is skipped in file, so only older fields loaded
         {
             Gui::lastReadingTime = fields[0];
             statLabels["Last reading"]->setText(QString("<span style='color:gray; font-size:14px;'>%1</span>").arg(Gui::lastReadingTime));
             for (int i = 0; i < statNames.size(); ++i)
             {
+                if (statNames[i] == "Current DPI") continue; // 👈 not in CSV
                 statLabels[statNames[i]]->setText(
                     QString("<span style='color:gray; font-size:14px;'>%1</span>").arg(fields[i + 1]));
             }

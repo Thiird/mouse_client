@@ -46,8 +46,8 @@ namespace ComPort
     extern bool (*read_data_X)(MouseStatus &status);
     static bool ret = false;
 
-    // Static VID/PID for RECEIVER and MOUSE
-    static const std::wstring vidPid = L"VID_2FE3&PID_0003&REV_0303";
+    static const std::wstring receiverVidPid = L"VID_2FE3&PID_0002&REV_0303";
+    static const std::wstring mouseVidPid = L"VID_2FE3&PID_0003&REV_0303";
     static const std::wstring receiverDescription = L"Cool mouse receiver";
     static const std::wstring mouseDescription = L"Cool mouse";
 
