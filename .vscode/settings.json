@@ -81,6 +81,9 @@
     "qdialog": "cpp",
     "qmovie": "cpp",
     "qhboxlayout": "cpp",
-    "qimagereader": "cpp"
+    "qimagereader": "cpp",
+    "queue": "cpp",
+    "ranges": "cpp",
+    "stack": "cpp"
   }
 }

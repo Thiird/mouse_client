@@ -15,7 +15,7 @@
 namespace ComPort
 {
     bool (*read_data_X)(MouseStatus &status) = nullptr;
-    Subject connectedTo = Subject::UNKNOWN;
+    Subject connectedTo = Subject::NONE;
 
     bool detectDevices(std::wstring &mouseComPort, std::wstring &receiverComPort)
     {
@@ -131,7 +131,7 @@ namespace ComPort
             CloseHandle(hSerial);
             hSerial = INVALID_HANDLE_VALUE;
         }
-        connectedTo = Subject::UNKNOWN;
+        connectedTo = Subject::NONE;
         read_data_X = nullptr;
     }
 

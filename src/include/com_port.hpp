@@ -14,7 +14,7 @@ namespace ComPort
 {
     enum class Subject
     {
-        UNKNOWN,
+        NONE,
         MOUSE,
         RECEIVER
     };

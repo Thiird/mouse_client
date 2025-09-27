@@ -44,7 +44,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 
 if(WIN32)
-    target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets Qt6::Multimedia setupapi)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets Qt6::Multimedia setupapi msvcrt)
 else()
     target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Widgets Qt6::Multimedia)
 endif()

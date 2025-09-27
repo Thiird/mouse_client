@@ -8,7 +8,12 @@ For Windows:
 
 ```bash
 cd build
+
+# Release
 cmake .. -G "MinGW Makefiles" -DCMAKE_PREFIX_PATH="C:/Qt/6.9.1/mingw_64"
+# Debug
+cmake .. -G "MinGW Makefiles" -DCMAKE_PREFIX_PATH="C:/Qt/6.9.1/mingw_64" -DCMAKE_BUILD_TYPE=Debug
+
 cmake --build .
 cmake --build . --target clean
 

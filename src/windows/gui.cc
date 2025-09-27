@@ -41,6 +41,7 @@
 QMainWindow *mainWindow = nullptr;
 QSystemTrayIcon *trayIcon = nullptr;
 QLabel *dataLabel = nullptr;
+QPushButton *connectButton = nullptr;
 QPushButton *reloadButton = nullptr;
 QIcon *connectedIcon = nullptr;
 QIcon *disconnectedIcon = nullptr;
@@ -115,6 +116,8 @@ void Gui::updateGui(ComPort::MouseStatus &data, bool connected)
                 out << Gui::lastReadingTime << "," << data.left_clicks << "," << data.right_clicks << ","
                     << data.middle_clicks << "," << data.backward_clicks << "," << data.forward_clicks << ","
                     << data.downward_scrolls << "," << data.upward_scrolls << "\n";
+                
+                    std::cout << "Wrote stats to file." << std::endl;
             }
         }
 
@@ -171,7 +174,7 @@ void gui_init(QApplication &app, QAction **quitActionOut)
             QTextStream out(&checkFile);
             out << "Date";
             for (const auto &name : statNames)
-                if (name != "Current DPI") // 👈 skip DPI in CSV
+                if (name != "Current DPI")
                     out << "," << name;
             out << "\n";
         }
@@ -202,6 +205,8 @@ void gui_init(QApplication &app, QAction **quitActionOut)
     grid->setSpacing(2);
     grid->setContentsMargins(0, 0, 0, 0);
     grid->setAlignment(Qt::AlignTop);
+    grid->setColumnStretch(0, 0);
+    grid->setColumnStretch(1, 1);
 
     QString nameStyle = "padding: 1px; font-size: 12px;";
     QString valueStyle = "padding: 1px; font-weight: bold; font-size: 14px;";
@@ -209,33 +214,33 @@ void gui_init(QApplication &app, QAction **quitActionOut)
     for (int i = 0; i < statNames.size(); ++i)
     {
         QLabel *nameLabel = new QLabel(statNames[i] + ":");
-        QLabel *valueLabel = new QLabel("<span style='color:gray; font-size:14px;'>0</span>");
+        QLabel *valueLabel = new QLabel("<span style='color:gray; font-size:14px;'>-</span>");
         valueLabel->setTextFormat(Qt::RichText);
 
         nameLabel->setStyleSheet(nameStyle);
         valueLabel->setStyleSheet(valueStyle);
 
         statLabels[statNames[i]] = valueLabel;
-        grid->addWidget(nameLabel, i, 0, Qt::AlignRight | Qt::AlignTop);
+        grid->addWidget(nameLabel, i, 0, Qt::AlignLeft | Qt::AlignTop);
         grid->addWidget(valueLabel, i, 1, Qt::AlignLeft | Qt::AlignTop);
     }
 
     QLabel *batteryLabel = new QLabel("Battery level:");
-    QLabel *batteryValueLabel = new QLabel("<span style='color:gray; font-size:14px;'>0%</span>");
+    QLabel *batteryValueLabel = new QLabel("<span style='color:gray; font-size:14px;'>-</span>");
     batteryValueLabel->setTextFormat(Qt::RichText);
     batteryValueLabel->setStyleSheet(valueStyle);
     batteryLabel->setStyleSheet(nameStyle);
     statLabels["Battery level"] = batteryValueLabel;
-    grid->addWidget(batteryLabel, statNames.size(), 0, Qt::AlignRight | Qt::AlignTop);
+    grid->addWidget(batteryLabel, statNames.size(), 0, Qt::AlignLeft | Qt::AlignTop);
     grid->addWidget(batteryValueLabel, statNames.size(), 1, Qt::AlignLeft | Qt::AlignTop);
 
     QLabel *lastReadingLabel = new QLabel("Last reading:");
-    QLabel *lastReadingValueLabel = new QLabel("<span style='color:gray; font-size:14px;'>Never</span>");
+    QLabel *lastReadingValueLabel = new QLabel("<span style='color:gray; font-size:14px;'>-</span>");
     lastReadingValueLabel->setTextFormat(Qt::RichText);
     lastReadingValueLabel->setStyleSheet(valueStyle);
     lastReadingLabel->setStyleSheet(nameStyle);
     statLabels["Last reading"] = lastReadingValueLabel;
-    grid->addWidget(lastReadingLabel, statNames.size() + 1, 0, Qt::AlignRight | Qt::AlignTop);
+    grid->addWidget(lastReadingLabel, statNames.size() + 1, 0, Qt::AlignLeft | Qt::AlignTop);
     grid->addWidget(lastReadingValueLabel, statNames.size() + 1, 1, Qt::AlignLeft | Qt::AlignTop);
 
     QFrame *gridFrame = new QFrame();
