@@ -24,10 +24,9 @@ HWND comNotifyHwnd = nullptr;
 // -------------------- Functions --------------------
 bool selectDevice()
 {
-    if(ComPort::connectedTo == ComPort::Subject::MOUSE)
-        return true;
+    ComPort::connectedTo = ComPort::Subject::NONE;
 
-    if (!mouseComPort.empty() && ComPort::connectedTo != ComPort::Subject::MOUSE)
+    if (!mouseComPort.empty())
     {
         ComPort::disconnect();
         std::cout << "MOUSE detected on "
@@ -43,7 +42,7 @@ bool selectDevice()
         }
     }
 
-    if (!receiverComPort.empty() && ComPort::connectedTo != ComPort::Subject::RECEIVER)
+    if (!receiverComPort.empty())
     {
         ComPort::disconnect();
         std::cout << "RECEIVER detected on "
@@ -76,14 +75,19 @@ void deviceMonitoringThread()
 
         comPortEvents--; // consume event
 
-        if(!ComPort::detectDevices(mouseComPort, receiverComPort))
+        if (!ComPort::detectDevices(mouseComPort, receiverComPort))
+        {
+            std::cout << "Could not detect any device" << std::endl;
             continue;
+        }
 
         if (!selectDevice())
         {
-            std::cout << "Trying to connect to COM port..." << std::endl;
+            std::cout << "Could not select a COM port..." << std::endl;
             Gui::updateGui(status, false);
         }
+
+        std::cout << "Selected a device" << std::endl;
     }
 }
 
@@ -94,7 +98,7 @@ void dataReadingThread()
     {
         if (!deviceConnected)
         {
-            Sleep(500);
+            Sleep(1000);
             continue;
         }
 
@@ -117,7 +121,7 @@ void dataReadingThread()
         }
 
         Gui::updateGui(status, true);
-        Sleep(1000);
+        Sleep(2000);
     }
 }
 
@@ -137,7 +141,11 @@ void comPortNotificationThread()
             {
                 PDEV_BROADCAST_HDR pHdr = (PDEV_BROADCAST_HDR)lParam;
                 if (pHdr && pHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE)
+                {
+                    std::cout << "Something com port happened" << std::endl;
+                    deviceConnected = false;
                     comPortEvents++;
+                }
             }
             break;
 
@@ -161,8 +169,7 @@ void comPortNotificationThread()
     HWND hwnd = CreateWindowEx(
         0, CLASS_NAME, L"COM Port Notification Window",
         0, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-        nullptr, nullptr, hInstance, nullptr
-    );
+        nullptr, nullptr, hInstance, nullptr);
 
     comNotifyHwnd = hwnd;
 
@@ -178,8 +185,7 @@ void comPortNotificationThread()
     NotificationFilter.dbcc_classguid = GUID_DEVINTERFACE_COMPORT;
 
     HDEVNOTIFY hDevNotify = RegisterDeviceNotification(
-        hwnd, &NotificationFilter, DEVICE_NOTIFY_WINDOW_HANDLE
-    );
+        hwnd, &NotificationFilter, DEVICE_NOTIFY_WINDOW_HANDLE);
 
     if (!hDevNotify)
     {
@@ -202,26 +208,29 @@ void comPortNotificationThread()
 #endif
 
 // -------------------- Main --------------------
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
 
 #ifdef _WIN32
 
     bool noConsole = false;
-    for (int i = 1; i < argc; ++i) {
-        if (std::strcmp(argv[i], "--no-console") == 0) {
+    for (int i = 1; i < argc; ++i)
+    {
+        if (std::strcmp(argv[i], "--no-console") == 0)
+        {
             noConsole = true;
             break;
         }
     }
-    if (noConsole) {
+    if (noConsole)
+    {
         FreeConsole();
     }
 #endif
 
     QApplication app(argc, argv);
 
-    QAction* quitAction = nullptr;
+    QAction *quitAction = nullptr;
     gui_init(app, &quitAction);
 
     std::thread comNotifyThread(comPortNotificationThread);
@@ -229,7 +238,7 @@ int main(int argc, char* argv[])
     std::thread readerThread(dataReadingThread);
 
     QObject::connect(quitAction, &QAction::triggered, [&]()
-    {
+                     {
         stopRequested = true;
 
         if (comNotifyHwnd)
@@ -239,8 +248,7 @@ int main(int argc, char* argv[])
         if (readerThread.joinable()) readerThread.join();
         if (comNotifyThread.joinable()) comNotifyThread.join();
 
-        app.quit();
-    });
+        app.quit(); });
 
     return app.exec();
 }

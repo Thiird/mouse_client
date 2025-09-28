@@ -64,8 +64,8 @@ namespace ComPort
     {
         if (targetComPort.empty())
         {
-            std::cerr << "No COM port found for " 
-                      << (targetSubject == Subject::MOUSE ? "MOUSE" : "RECEIVER") 
+            std::cerr << "No COM port found for "
+                      << (targetSubject == Subject::MOUSE ? "MOUSE" : "RECEIVER")
                       << std::endl;
             return false;
         }
@@ -94,7 +94,7 @@ namespace ComPort
         dcb.BaudRate = CBR_115200;
         dcb.ByteSize = 8;
         dcb.StopBits = ONESTOPBIT;
-        dcb.Parity   = NOPARITY;
+        dcb.Parity = NOPARITY;
         ret = SetCommState(hSerial, &dcb);
         if (!ret)
         {
@@ -141,7 +141,7 @@ namespace ComPort
         DWORD bw = 0;
         if (!WriteFile(hSerial, &enter, 1, &bw, NULL))
         {
-            std::cout << "Failed to send ENTER" << std::endl;
+            std::cout << "Failed to send ENTER to receiver" << std::endl;
             return false;
         }
 
@@ -155,7 +155,7 @@ namespace ComPort
         std::regex battery_re(R"(Battery level:\s*(-?\d+)mV\s*=\s*(\d+)%?)");
         if (std::regex_search(response, m, battery_re))
         {
-            status.battery_mv      = std::stoi(m[1]);
+            status.battery_mv = std::stoi(m[1]);
             status.battery_percent = std::stoi(m[2]);
         }
 
@@ -169,7 +169,7 @@ namespace ComPort
         DWORD bw = 0;
         if (!WriteFile(hSerial, &enter, 1, &bw, NULL))
         {
-            std::cout << "Failed to send ENTER" << std::endl;
+            std::cout << "Failed to send ENTER to mouse" << std::endl;
             return false;
         }
 
@@ -212,7 +212,7 @@ namespace ComPort
         std::regex battery_re(R"(Battery level:\s*(-?\d+)mV\s*=\s*(\d+)%?)");
         if (std::regex_search(response, m, battery_re))
         {
-            status.battery_mv      = std::stoi(m[1]);
+            status.battery_mv = std::stoi(m[1]);
             status.battery_percent = std::stoi(m[2]);
         }
 

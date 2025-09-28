@@ -27,7 +27,7 @@
 
 #include "../include/gui.hpp"
 
-#define APP_VERSION "0.8"
+#define APP_VERSION "0.9"
 
 #define WINDOW_SIZE_X 300
 #define WINDOW_SIZE_Y 280
@@ -42,7 +42,6 @@ QMainWindow *mainWindow = nullptr;
 QSystemTrayIcon *trayIcon = nullptr;
 QLabel *dataLabel = nullptr;
 QPushButton *connectButton = nullptr;
-QPushButton *reloadButton = nullptr;
 QIcon *connectedIcon = nullptr;
 QIcon *disconnectedIcon = nullptr;
 QMediaPlayer *lowBatteryPlayer = nullptr;
@@ -57,8 +56,7 @@ QStringList statNames = {
     "Left clicks", "Right clicks", "Middle clicks",
     "Backward clicks", "Forward clicks",
     "Down scrolls", "Up scrolls",
-    "Current DPI"
-};
+    "Current DPI"};
 
 Gui::Gui(QApplication &app, QObject *parent) : QObject(parent), app(app) {}
 Gui::~Gui() {}
@@ -76,14 +74,21 @@ void Gui::updateGui(ComPort::MouseStatus &data, bool connected)
         }
         else if (ComPort::connectedTo == ComPort::Subject::RECEIVER)
         {
+            for (const QString &name : statLabels.keys())
+            {
+                QString currentText = statLabels[name]->text();
+                QString value = currentText.section('>', 1).section('<', 0, 0);
+                statLabels[name]->setText(QString("<span style='color:gray; font-size:14px;'>%1</span>").arg(value));
+            }
+
+            statLabels["Current DPI"]->setText(QString("<span style='color:gray; font-size:14px;'>-</span>"));
+
             mainWindow->setWindowTitle("Connected to RECEIVER");
             trayIcon->setToolTip("Connected to RECEIVER");
         }
 
         mainWindow->setWindowIcon(*connectedIcon);
         trayIcon->setIcon(*connectedIcon);
-        reloadButton->setEnabled(true);
-        reloadButton->setToolTip("Click to update the data");
 
         // Update stat labels with black color and larger text
         if (ComPort::connectedTo == ComPort::Subject::MOUSE)
@@ -116,8 +121,8 @@ void Gui::updateGui(ComPort::MouseStatus &data, bool connected)
                 out << Gui::lastReadingTime << "," << data.left_clicks << "," << data.right_clicks << ","
                     << data.middle_clicks << "," << data.backward_clicks << "," << data.forward_clicks << ","
                     << data.downward_scrolls << "," << data.upward_scrolls << "\n";
-                
-                    std::cout << "Wrote stats to file." << std::endl;
+
+                std::cout << "Wrote stats to file." << std::endl;
             }
         }
 
@@ -133,8 +138,6 @@ void Gui::updateGui(ComPort::MouseStatus &data, bool connected)
         mainWindow->setWindowIcon(*disconnectedIcon);
         trayIcon->setIcon(*disconnectedIcon);
         trayIcon->setToolTip("Not connected");
-        reloadButton->setEnabled(false);
-        reloadButton->setToolTip("No device connected");
 
         // Keep last values, but gray
         for (const QString &name : statLabels.keys())
@@ -144,6 +147,8 @@ void Gui::updateGui(ComPort::MouseStatus &data, bool connected)
             statLabels[name]->setText(QString("<span style='color:gray; font-size:14px;'>%1</span>").arg(value));
         }
     }
+
+    std::cout << "GUI updated" << std::endl;
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -256,24 +261,6 @@ void gui_init(QApplication &app, QAction **quitActionOut)
     dataLabel->setMaximumHeight(40);
     mainLayout->addWidget(dataLabel, 1, 0, 1, 2, Qt::AlignTop);
 
-    reloadButton = new QPushButton();
-    reloadButton->setText("Update now");
-    reloadButton->setToolTip("No device connected");
-    reloadButton->setEnabled(false);
-    reloadButton->setFixedSize(100, 30);
-    mainLayout->addWidget(reloadButton, 2, 0, 1, 2, Qt::AlignHCenter | Qt::AlignVCenter);
-
-    // Connect reloadButton's clicked signal
-    QObject::connect(reloadButton, &QPushButton::clicked, []()
-                     {
-        ComPort::MouseStatus status;
-        bool success = ComPort::read_data_X(status);
-        if (success)
-        {
-            Gui::lastReadingTime = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
-        }
-        Gui::updateGui(status, success); });
-
     QWidget *centralWidget = new QWidget();
     centralWidget->setLayout(mainLayout);
     mainWindow->setCentralWidget(centralWidget);
@@ -373,7 +360,8 @@ void gui_init(QApplication &app, QAction **quitActionOut)
             statLabels["Last reading"]->setText(QString("<span style='color:gray; font-size:14px;'>%1</span>").arg(Gui::lastReadingTime));
             for (int i = 0; i < statNames.size(); ++i)
             {
-                if (statNames[i] == "Current DPI") continue; // 👈 not in CSV
+                if (statNames[i] == "Current DPI")
+                    continue; // not in CSV
                 statLabels[statNames[i]]->setText(
                     QString("<span style='color:gray; font-size:14px;'>%1</span>").arg(fields[i + 1]));
             }
