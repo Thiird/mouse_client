@@ -24,14 +24,13 @@
 #include <QtMultimedia/QAudioOutput>
 #include <QtMultimedia/QMediaPlayer>
 #include <QVBoxLayout>
+#include <QDesktopServices>
 
 #include "../include/gui.hpp"
 
 #define APP_VERSION "0.9"
-
 #define WINDOW_SIZE_X 300
 #define WINDOW_SIZE_Y 280
-
 #define STATS_FILENAME "mouse_stats.txt"
 #define THALES_FILENAME "mouse_thales.txt"
 #define BEEP_FILENAME "beep.wav"
@@ -57,6 +56,12 @@ QStringList statNames = {
     "Backward clicks", "Forward clicks",
     "Down scrolls", "Up scrolls",
     "Current DPI"};
+
+// Helper function to get the absolute path for STATS_FILENAME
+QString getStatsFilePath()
+{
+    return QCoreApplication::applicationDirPath() + "/" + STATS_FILENAME;
+}
 
 Gui::Gui(QApplication &app, QObject *parent) : QObject(parent), app(app) {}
 Gui::~Gui() {}
@@ -106,10 +111,10 @@ void Gui::updateGui(ComPort::MouseStatus &data, bool connected)
         statLabels["Battery level"]->setText(QString("<span style='color:black; font-weight:bold; font-size:14px;'>%1%</span>").arg(data.battery_percent));
         statLabels["Last reading"]->setText(QString("<span style='color:black; font-size:14px;'>%1</span>").arg(Gui::lastReadingTime));
 
-        // Append to CSV (do NOT include DPI)
+        // Append to CSV
         if (ComPort::connectedTo == ComPort::Subject::MOUSE)
         {
-            QFile file(STATS_FILENAME);
+            QFile file(getStatsFilePath()); // Use absolute path
             bool needHeader = (!file.exists() || file.size() == 0);
             if (file.open(QIODevice::Append | QIODevice::Text))
             {
@@ -122,7 +127,11 @@ void Gui::updateGui(ComPort::MouseStatus &data, bool connected)
                     << data.middle_clicks << "," << data.backward_clicks << "," << data.forward_clicks << ","
                     << data.downward_scrolls << "," << data.upward_scrolls << "\n";
 
-                std::cout << "Wrote stats to file." << std::endl;
+                std::cout << "Wrote stats to file: " << getStatsFilePath().toStdString() << std::endl;
+            }
+            else
+            {
+                std::cerr << "Failed to open stats file: " << getStatsFilePath().toStdString() << std::endl;
             }
         }
 
@@ -171,7 +180,7 @@ void gui_init(QApplication &app, QAction **quitActionOut)
     }
     app.setWindowIcon(*disconnectedIcon);
 
-    QFile checkFile(STATS_FILENAME);
+    QFile checkFile(getStatsFilePath()); // Use absolute path
     if (!checkFile.exists())
     {
         if (checkFile.open(QIODevice::WriteOnly | QIODevice::Text))
@@ -183,19 +192,25 @@ void gui_init(QApplication &app, QAction **quitActionOut)
                     out << "," << name;
             out << "\n";
         }
+        else
+        {
+            qDebug() << "Failed to create stats file:" << getStatsFilePath();
+        }
     }
 
     mainWindow = new MainWindow();
     mainWindow->setWindowTitle("Not connected");
     mainWindow->setWindowIcon(*disconnectedIcon);
     mainWindow->setFixedWidth(WINDOW_SIZE_X);
-    mainWindow->setFixedHeight(WINDOW_SIZE_Y);
+    // mainWindow->setFixedHeight(WINDOW_SIZE_Y);
 
     QMenu *aboutMenu = new QMenu("About");
-    QAction *aboutAction = new QAction("About");
+    QAction *openFolderAction = new QAction("Open location");
     QAction *thalesAction = new QAction("Thales");
-    aboutMenu->addAction(aboutAction);
+    QAction *aboutAction = new QAction("About");
+    aboutMenu->addAction(openFolderAction);
     aboutMenu->addAction(thalesAction);
+    aboutMenu->addAction(aboutAction);
 
     QMenuBar *menuBar = new QMenuBar();
     menuBar->addMenu(aboutMenu);
@@ -282,71 +297,76 @@ void gui_init(QApplication &app, QAction **quitActionOut)
 
     QObject::connect(aboutAction, &QAction::triggered, []()
                      {
-    QMovie *movie = new QMovie(QString(":/res/") + GIF_FILENAME);
-    if (!movie->isValid()) {
-        QMessageBox::warning(mainWindow, "Error", QString("Failed to load GIF: ") + GIF_FILENAME);
-        return;
-    }
-    QLabel *gifLabel = new QLabel();
-    movie->jumpToFrame(0);
-    QSize gifSize = movie->currentImage().size();
-    gifLabel->setFixedSize(gifSize);
-    gifLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    gifLabel->setMovie(movie);
-    movie->start();
+                         QMovie *movie = new QMovie(QString(":/res/") + GIF_FILENAME);
+                         if (!movie->isValid()) {
+                             QMessageBox::warning(mainWindow, "Error", QString("Failed to load GIF: ") + GIF_FILENAME);
+                             return;
+                         }
+                         QLabel *gifLabel = new QLabel();
+                         movie->jumpToFrame(0);
+                         QSize gifSize = movie->currentImage().size();
+                         gifLabel->setFixedSize(gifSize);
+                         gifLabel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+                         gifLabel->setMovie(movie);
+                         movie->start();
 
-    QString buildInfo = QString("<b>Mouse Client</b><br>Display and backup mouse stats<br><br>Version: %1<br>Compiled on: %2 %3 %4")
-                            .arg(APP_VERSION)
-                            .arg(__DATE__)
-                            .arg(__TIME__)
-                            .arg(QTimeZone::systemTimeZone().displayName(QDateTime::currentDateTime(), QTimeZone::ShortName));
+                         QString buildInfo = QString("<b>Mouse Client</b><br>Display and backup mouse stats<br><br>Version: %1<br>Compiled on: %2 %3 %4")
+                                                .arg(APP_VERSION)
+                                                .arg(__DATE__)
+                                                .arg(__TIME__)
+                                                .arg(QTimeZone::systemTimeZone().displayName(QDateTime::currentDateTime(), QTimeZone::ShortName));
 
-    QLabel *infoLabel = new QLabel(buildInfo);
-    infoLabel->setAlignment(Qt::AlignCenter);
-    infoLabel->setTextFormat(Qt::RichText);
-    infoLabel->setStyleSheet("font-size: 12px; padding: 4px;");
+                         QLabel *infoLabel = new QLabel(buildInfo);
+                         infoLabel->setAlignment(Qt::AlignCenter);
+                         infoLabel->setTextFormat(Qt::RichText);
+                         infoLabel->setStyleSheet("font-size: 12px; padding: 4px;");
 
-    QDialog dialog(mainWindow);
-    dialog.setWindowTitle("About");
-    dialog.setFixedSize(400, 150);
+                         QDialog dialog(mainWindow);
+                         dialog.setWindowTitle("About");
+                         dialog.setFixedSize(400, 150);
 
-    QHBoxLayout *hbox = new QHBoxLayout();
-    hbox->addWidget(gifLabel, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    hbox->addSpacing(10);
-    hbox->addWidget(infoLabel, 1, Qt::AlignCenter);
-    dialog.setLayout(hbox);
-    dialog.exec(); });
+                         QHBoxLayout *hbox = new QHBoxLayout();
+                         hbox->addWidget(gifLabel, 0, Qt::AlignLeft | Qt::AlignVCenter);
+                         hbox->addSpacing(10);
+                         hbox->addWidget(infoLabel, 1, Qt::AlignCenter);
+                         dialog.setLayout(hbox);
+                         dialog.exec(); });
+
+    QObject::connect(openFolderAction, &QAction::triggered, []()
+                     {
+                         QString programPath = QCoreApplication::applicationDirPath();
+                         QDesktopServices::openUrl(QUrl::fromLocalFile(programPath)); });
 
     QObject::connect(thalesAction, &QAction::triggered, []()
                      {
-        QFile file(QString(":/res/") + THALES_FILENAME);
-        QString text = "Could not load text.";
-        if (file.open(QIODevice::ReadOnly | QIODevice::Text))
-            text = QTextStream(&file).readAll();
+                         QFile file(QString(":/res/") + THALES_FILENAME);
+                         QString text = "Could not load text.";
+                         if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+                             text = QTextStream(&file).readAll();
 
-        QTextBrowser* browser = new QTextBrowser;
-        browser->setText(text);
-        browser->setFrameStyle(QFrame::NoFrame);
-        browser->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-        browser->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-        browser->setTextInteractionFlags(Qt::NoTextInteraction);
-        browser->setStyleSheet("background: palette(window); color: palette(text);");
+                         QTextBrowser* browser = new QTextBrowser;
+                         browser->setText(text);
+                         browser->setFrameStyle(QFrame::NoFrame);
+                         browser->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+                         browser->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+                         browser->setTextInteractionFlags(Qt::NoTextInteraction);
+                         browser->setStyleSheet("background: palette(window); color: palette(text);");
 
-        QDialog dialog(mainWindow);
-        QVBoxLayout* vbox = new QVBoxLayout(&dialog);
-        vbox->addWidget(browser);
-        dialog.setWindowTitle("Mouse Thales");
-        dialog.resize(400, 300);
-        dialog.exec(); });
+                         QDialog dialog(mainWindow);
+                         QVBoxLayout* vbox = new QVBoxLayout(&dialog);
+                         vbox->addWidget(browser);
+                         dialog.setWindowTitle("Mouse Thales");
+                         dialog.resize(400, 300);
+                         dialog.exec(); });
 
     QObject::connect(openAction, &QAction::triggered, []()
                      {
-        mainWindow->show();
-        mainWindow->raise();
-        mainWindow->activateWindow();
-        Gui::guiOpen = true; });
+                         mainWindow->show();
+                         mainWindow->raise();
+                         mainWindow->activateWindow();
+                         Gui::guiOpen = true; });
 
-    QFile stats(STATS_FILENAME);
+    QFile stats(getStatsFilePath()); // Use absolute path
     if (stats.open(QIODevice::ReadOnly | QIODevice::Text))
     {
         QString lastLine;
@@ -366,6 +386,10 @@ void gui_init(QApplication &app, QAction **quitActionOut)
                     QString("<span style='color:gray; font-size:14px;'>%1</span>").arg(fields[i + 1]));
             }
         }
+    }
+    else
+    {
+        qDebug() << "Failed to read stats file:" << getStatsFilePath();
     }
 
     // MP3 low battery alert
